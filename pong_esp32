@@ -1,0 +1,98 @@
+ #include <Wire.h>
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_GFX.h>
+int const display_w = 128;
+int const display_h = 64;
+const byte port_pot_l = 14;
+const byte port_pot_r = 13;
+Adafruit_SSD1306 display(display_w,display_h,&Wire,-1);
+int ball_pos_x = 64;
+int ball_pos_y = 32;
+int ball_r = 2;
+int ball_dir_x = 1;
+int ball_dir_y = 1;
+int score_1st = 0;
+int score_2nd = 0;
+unsigned long timer_game = 0;
+void borders(){
+  display.drawFastHLine(0,0,127,WHITE);
+  display.drawFastVLine(0,0,63,WHITE);
+  display.drawFastHLine(0,63,127,WHITE);
+  display.drawFastVLine(127,0,63,WHITE);
+}
+void setup() {
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.display(); 
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  
+  pinMode(port_pot_l, INPUT);
+  pinMode(port_pot_r, INPUT);
+}
+void loop() {
+  int pos_wall_l = analogRead(port_pot_l)/63;
+  int pos_wall_r = analogRead(port_pot_r)/63;
+  borders();
+  if (pos_wall_l < 1){
+    pos_wall_l = 1;
+  }
+  if(pos_wall_l+8 > 62){
+    pos_wall_l = 54;
+  }
+  if (pos_wall_r < 1){
+    pos_wall_r = 1;
+  }
+  if(pos_wall_r+8 > 62){
+    pos_wall_r = 62-8;
+  }
+  display.drawFastVLine(6,pos_wall_l,8,WHITE);
+  display.drawFastVLine(121,pos_wall_r,8,WHITE);
+  if(millis() - timer_game >= 20){
+     ball_pos_x += ball_dir_x;
+     ball_pos_y += ball_dir_y;
+    
+      
+      if(ball_pos_y+ball_r >= display_h-1){
+         ball_dir_y = -1;
+     }  
+     
+      if(ball_pos_y <= ball_r+1){
+         ball_dir_y = 1;
+     }     
+     
+     for(int i = 0; i < 9; i++){
+         if(ball_pos_x - ball_r == 6 && ball_pos_y  == pos_wall_l+i){
+            ball_dir_x = -1 * ball_dir_x;
+         }
+         if(ball_pos_x + ball_r == 121 && ball_pos_y  == pos_wall_r+i){
+            ball_dir_x = -1 * ball_dir_x;
+            
+         }
+     }   
+     if(ball_pos_x + ball_r >= display_w-1){
+        score_1st += 1;
+        ball_pos_x = 64;
+        ball_pos_y = 32;
+     }  
+     if(ball_pos_x <= ball_r+1){
+        score_2nd += 1;
+        ball_pos_x = 64;
+        ball_pos_y = 32;
+     }
+     display.fillCircle(ball_pos_x, ball_pos_y,ball_r, WHITE);
+     display.display();
+     timer_game = millis();
+     display.clearDisplay();
+     display.setCursor(50,4);
+     if (score_1st<10){
+      display.print(" ");
+      display.print(score_1st);
+     } else {
+      display.print(score_1st);
+     }
+      display.print(":");    
+      display.print(score_2nd);
+     
+  }
+}
